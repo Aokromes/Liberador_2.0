@@ -944,3 +944,15 @@ body.light .search-line2 {
     box-shadow: none !important;
     backdrop-filter: none !important;
 }
+
+/* ============================================
+   PANEL DERECHO: fondo transparente SIEMPRE
+   (pero sin tocar el renderizador)
+   ============================================ */
+
+.right-panel {
+    background: transparent !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+}
+

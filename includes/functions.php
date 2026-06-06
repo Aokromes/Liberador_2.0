@@ -93,11 +93,14 @@ function searchByEmail(string $email, PDO $db)
 function raceIcon(int $race, int $gender)
 {
     $races = [
-        1=>"human",2=>"orc",3=>"dwarf",4=>"nightelf",5=>"undead",
-        6=>"tauren",7=>"gnome",8=>"troll",10=>"bloodelf",11=>"draenei"
+        1=>"human", 2=>"orc", 3=>"dwarf", 4=>"nightelf", 5=>"undead",
+        6=>"tauren", 7=>"gnome", 8=>"troll", 10=>"bloodelf", 11=>"draenei"
     ];
 
-    return ($races[$race] ?? "human") . "_" . ($gender ? "female" : "male");
+    $base = $races[$race] ?? "human";
+    $sex  = $gender ? "female" : "male";
+
+    return "races_" . $base . "_" . $sex . ".png";
 }
 
 function classIcon(int $class)
@@ -109,6 +112,16 @@ function classIcon(int $class)
     ];
 
     return $icons[$class] ?? "warrior.png";
+}
+
+function raceName(int $race)
+{
+    return "race_" . $race;
+}
+
+function className(int $class)
+{
+    return "class_" . $class;
 }
 
 function mapName(int $id, array $mapNames)
@@ -137,5 +150,36 @@ function formatPlaytime(int $seconds)
     if ($days > 0)  $result .= "$days días, ";
 
     return $result . "{$hours}h {$minutes}m";
+}
+
+function getCharacters($accountId)
+{
+    global $DB;
+
+    $stmt = $DB->prepare("
+        SELECT 
+            c.guid,
+            c.name,
+            c.race,
+            c.class,
+            c.gender,
+            c.level,
+            c.online,
+            c.map,
+            c.zone,
+            c.position_x,
+            c.position_y,
+            c.position_z,
+            g.name AS guild_name
+        FROM characters c
+        LEFT JOIN guild g ON g.guildid = c.guildid
+        WHERE c.account = ?
+        ORDER BY c.name ASC
+    ");
+
+    $stmt->execute([$accountId]);
+    $characters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    return $characters;
 }
 

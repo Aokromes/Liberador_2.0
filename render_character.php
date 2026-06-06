@@ -92,6 +92,7 @@ $classColor = $classColors[$char['class']] ?? "#FFFFFF";
     <p><strong><?php echo $lang['race']; ?>:</strong> <?php echo $raceText; ?></p>
     <p><strong><?php echo $lang['class']; ?>:</strong> <?php echo $classText; ?></p>
     <p><strong><?php echo $lang['gender']; ?>:</strong> <?php echo $genderText; ?></p>
+    <p><strong>Hermandad:</strong><?php echo $char['guild_name'] ?: 'Sin hermandad'; ?></p>
     <p><strong><?php echo $lang['online']; ?>:</strong> <?php echo $onlineText; ?></p>
 
 </div>

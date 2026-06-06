@@ -147,7 +147,7 @@ if ($account && isset($_POST['search_email'])) {
             <?php foreach ($characters as $c): ?>
 
                 <?php
-                $raceIcon  = "assets/icons/races/races_" . raceIcon($c['race'], $c['gender']) . ".png";
+                $raceIcon  = "assets/icons/races/" . raceIcon($c['race'], $c['gender']) . "";
                 $classIcon = "assets/icons/classes/" . classIcon($c['class']);
                 ?>
 
