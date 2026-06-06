@@ -1,22 +1,22 @@
 <?php
 
 // Configuración de bases de datos TrinityCore
-return [
+$config = [
 
     // Base de datos de cuentas (auth)
     'auth' => [
-        'host' => 'localhost',
+        'host' => '127.0.0.1',
         'dbname' => 'auth',
-        'user' => 'trinitycore',
-        'pass' => 'mysecureverylongpassword',
+        'user' => 'trinity',
+        'pass' => 'contraseñalargaysegura',
     ],
 
     // Base de datos de personajes (characters)
     'characters' => [
-        'host' => 'localhost',
+        'host' => '127.0.0.1',
         'dbname' => 'characters',
-        'user' => 'trinitycore',
-        'pass' => 'mysecureverylongpassword',
+        'user' => 'trinity',
+        'pass' => 'contraseñalargaysegura',
     ],
 
     // Opciones comunes de PDO

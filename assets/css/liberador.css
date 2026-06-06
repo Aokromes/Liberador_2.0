@@ -1,0 +1,470 @@
+/* ============================
+   LOGO DE FONDO A PANTALLA COMPLETA
+   ============================ */
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background-image: url("/tools/liberador/assets/img/logo.png");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    color: #eee;
+}
+
+body.light {
+    background-image: url("/tools/liberador/assets/img/logo.png");
+    color: #111;
+}
+
+/* ============================
+   LAYOUT GENERAL
+   ============================ */
+
+.layout {
+    display: flex;
+    height: 100vh;
+}
+
+/* ============================
+   PANEL IZQUIERDO
+   ============================ */
+
+.left-panel {
+    width: 40%;
+    padding: 20px;
+    background: rgba(24, 24, 24, 0.85);
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+}
+
+body.light .left-panel {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/* PANEL IZQUIERDO TRANSPARENTE EN LOGIN */
+body.no-account .left-panel {
+    background: transparent !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+}
+
+body.no-account .left-panel form {
+    background: rgba(0,0,0,0.55);
+    padding: 20px;
+    border-radius: 8px;
+}
+
+body.light.no-account .left-panel form {
+    background: rgba(255,255,255,0.55);
+}
+
+/* ============================
+   PANEL DERECHO
+   ============================ */
+
+.right-panel {
+    width: 60%;
+    padding: 20px;
+    background: rgba(32, 32, 32, 0.85);
+    border-left: 1px solid #333;
+    overflow-y: auto;
+    backdrop-filter: blur(4px);
+}
+
+body.light .right-panel {
+    background: rgba(255, 255, 255, 0.85);
+}
+
+/* ============================
+   HEADER UNIVERSAL
+   ============================ */
+
+.global-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 15px;
+}
+
+.account-title {
+    margin: 0;
+    padding: 0;
+    font-size: 20px;
+    flex-grow: 1;
+    text-align: left;
+}
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ============================
+   BOTÓN TEMA OSCURO/CLARO
+   ============================ */
+
+.theme-toggle {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    color: #fff;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.theme-toggle:hover {
+    background: #333;
+}
+
+body.light .theme-toggle {
+    background: #e6e6e6;
+    color: #111;
+    border-color: #999;
+}
+
+/* ============================
+   SELECTOR DE IDIOMA
+   ============================ */
+
+.lang-selector {
+    position: relative;
+}
+
+.lang-current {
+    background: #1a1a1a;
+    padding: 6px 10px;
+    border: 1px solid #444;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.lang-current:hover {
+    background: #222;
+}
+
+.lang-flag {
+    width: 18px;
+    height: 12px;
+    object-fit: cover;
+}
+
+.lang-arrow {
+    font-size: 10px;
+    opacity: 0.7;
+}
+
+.lang-menu {
+    display: none;
+    position: absolute;
+    right: 0;
+    margin-top: 4px;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 4px;
+    z-index: 999;
+    min-width: 140px;
+}
+
+.lang-menu a {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.lang-menu a:hover {
+    background: #333;
+}
+
+body.light .lang-current,
+body.light .lang-menu {
+    background: #e6e6e6;
+    color: #111;
+    border-color: #999;
+}
+
+body.light .lang-menu a:hover {
+    background: #d0d0d0;
+}
+
+/* ============================
+   LOGIN FORM
+   ============================ */
+
+.login-form {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 280px;
+    margin: 0 auto;
+}
+
+.login-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.login-label {
+    font-size: 14px;
+    color: #fff;
+    width: 120px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+body.light .login-label {
+    color: #111;
+}
+
+.login-input {
+    width: 130px;
+    padding: 6px 8px;
+    font-size: 13px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: rgba(0,0,0,0.45);
+    color: #fff;
+
+    text-align: left;      /* texto dentro a la izquierda */
+    margin-left: auto;     /* campo alineado a la derecha */
+}
+
+body.light .login-input {
+    background: rgba(255,255,255,0.55);
+    color: #111;
+    border-color: #999;
+}
+
+.login-button {
+    margin-top: 10px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #1a1a1a;
+    color: #fff;
+    cursor: pointer;
+}
+
+.login-button:hover {
+    background: #333;
+}
+
+body.light .login-button {
+    background: #e6e6e6;
+    color: #111;
+    border-color: #999;
+}
+
+body.light .login-button:hover {
+    background: #d0d0d0;
+}
+
+/* ============================
+   BLUR DE DATOS SENSIBLES
+   ============================ */
+
+.private {
+    filter: blur(6px);
+    transition: 0.2s;
+    cursor: pointer;
+}
+
+.private:hover {
+    filter: blur(0);
+}
+
+body.light .private {
+    color: #111 !important;
+}
+
+/* ============================
+   BOTONES DE CUENTA (logout + buscar email)
+   ============================ */
+
+.account-buttons {
+    display: flex;
+    justify-content: flex-start;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.account-buttons form {
+    display: inline-block;
+}
+
+.account-buttons button {
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid #444;
+    background: #1a1a1a;
+    color: #fff;
+    cursor: pointer;
+}
+
+.account-buttons button:hover {
+    background: #333;
+}
+
+body.light .account-buttons button {
+    background: #e6e6e6;
+    color: #111;
+    border-color: #999;
+}
+
+body.light .account-buttons button:hover {
+    background: #d0d0d0;
+}
+
+/* ============================
+   LISTA DE PERSONAJES — TRANSPARENTE + GLOW
+   ============================ */
+
+.character-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.character-item {
+    display: flex;
+    padding: 8px;
+    margin-bottom: 6px;
+    background: rgba(34, 34, 34, 0.35);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s ease;
+    backdrop-filter: blur(2px);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 0 6px rgba(0,0,0,0.4);
+}
+
+.character-item:hover {
+    background: rgba(50, 50, 50, 0.45);
+    box-shadow: 0 0 10px rgba(255,255,255,0.25);
+}
+
+.character-item.online {
+    border-left: 4px solid #4caf50;
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.55);
+}
+
+.character-item.selected {
+    border-left: 4px solid #1e90ff;
+    background: rgba(40, 80, 160, 0.35);
+    box-shadow:
+        0 0 10px rgba(30, 144, 255, 0.7),
+        0 0 20px rgba(30, 144, 255, 0.4);
+    transform: scale(1.02);
+}
+
+.char-icons img {
+    filter: drop-shadow(0 0 4px rgba(0,0,0,0.6));
+}
+
+.char-info {
+    font-size: 13px;
+    color: #fff;
+}
+
+.char-info.online-block {
+    color: #4caf50;
+}
+
+/* MODO CLARO */
+body.light .character-item {
+    background: rgba(230, 230, 230, 0.35);
+    border: 1px solid rgba(0,0,0,0.1);
+    box-shadow: 0 0 6px rgba(0,0,0,0.2);
+}
+
+body.light .character-item:hover {
+    background: rgba(210, 210, 210, 0.45);
+    box-shadow: 0 0 10px rgba(0,0,0,0.25);
+}
+
+body.light .character-item.online {
+    border-left: 4px solid #4caf50;
+    box-shadow: 0 0 12px rgba(76, 175, 80, 0.55);
+}
+
+body.light .character-item.selected {
+    border-left: 4px solid #1e90ff;
+    background: rgba(150, 180, 255, 0.35);
+    box-shadow:
+        0 0 10px rgba(30, 144, 255, 0.7),
+        0 0 20px rgba(30, 144, 255, 0.4);
+    transform: scale(1.02);
+}
+
+body.light .char-info {
+    color: #111;
+}
+
+/* ============================
+   RENDER / PANEL DERECHO
+   ============================ */
+
+.render-box {
+    border: 1px solid #333;
+    padding: 10px;
+    min-height: 100px;
+    background: rgba(24, 24, 24, 0.85);
+}
+
+body.light .render-box {
+    background: rgba(240, 240, 240, 0.85);
+}
+
+/* ============================
+   RESULTADOS DE BÚSQUEDA — 100% MÁS GRANDES
+   ============================ */
+
+.search-results {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
+
+.search-item {
+    padding: 8px;
+    margin-bottom: 8px;
+    background: rgba(34, 34, 34, 0.85);
+    border-radius: 4px;
+    font-size: 26px !important;
+    line-height: 1.3;
+}
+
+.search-line1 {
+    margin-bottom: 2px;
+    font-size: 28px !important;
+    font-weight: bold;
+}
+
+.search-line2 {
+    color: #ccc;
+    font-size: 24px !important;
+    opacity: 0.85;
+}
+
+body.light .search-item {
+    background: rgba(230, 230, 230, 0.85) !important;
+    color: #111 !important;
+}
+
+body.light .search-line2 {
+    color: #333 !important;
+}
+

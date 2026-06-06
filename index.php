@@ -1,158 +1,71 @@
 <?php
 session_start();
 
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+require_once __DIR__ . "/config.php";
+require_once __DIR__ . "/langs.php";
+require_once __DIR__ . "/maps.php";
+require_once __DIR__ . "/zones.php";
+require_once __DIR__ . "/includes/functions.php";
 
-$config     = require __DIR__ . '/config.php';
-$zoneNames  = require __DIR__ . '/zones.php';
-$mapNames   = require __DIR__ . '/maps.php';
-$langs      = require __DIR__ . '/langs.php';
+/* ============================
+   SELECCIÓN DE IDIOMA
+   ============================ */
 
-// Selección de idioma sin relogear
 if (isset($_GET['lang']) && isset($langs[$_GET['lang']])) {
     $_SESSION['lang'] = $_GET['lang'];
 }
-$lang = $langs[$_SESSION['lang'] ?? 'es'];
 
-// Conexión BD auth
-$db = new PDO(
-    "mysql:host={$config['auth']['host']};dbname={$config['auth']['dbname']}",
-    $config['auth']['user'],
-    $config['auth']['pass'],
-    $config['pdo_options']
-);
+$currentLangCode = $_SESSION['lang'] ?? 'es';
+$lang = $langs[$currentLangCode];
 
-// Logout
+/* ============================
+   CONEXIÓN BD AUTH
+   ============================ */
+
+$db = connectAuthDB($config);
+
+/* ============================
+   LOGOUT
+   ============================ */
+
 if (isset($_POST['logout'])) {
-    unset($_SESSION['account']);
-    unset($_SESSION['characters']);
+    unset($_SESSION['account'], $_SESSION['characters']);
+    header("Location: ?lang=" . $currentLangCode);
+    exit;
 }
 
-// Si ya está logeado, no volver a pedir login
-$account    = $_SESSION['account'] ?? null;
+/* ============================
+   SESIÓN ACTUAL
+   ============================ */
+
+$account    = $_SESSION['account']    ?? null;
 $characters = $_SESSION['characters'] ?? [];
 
-// SRP6v2
-function verifySRP6v2($username, $password, $salt_bin, $verifier_bin)
-{
-    $g = gmp_init(7);
-    $N = gmp_init("894B645E89E1535BBDAD5B8B290650530801B18EBFBF5E8FAB3C82872A3E9BB7", 16);
+/* ============================
+   LOGIN
+   ============================ */
 
-    $h1 = sha1(strtoupper($username . ":" . $password), true);
-    $h2 = sha1($salt_bin . $h1, true);
-
-    $h2_num = gmp_import($h2, 1, GMP_LSW_FIRST);
-    $v      = gmp_powm($g, $h2_num, $N);
-    if ($v === false) return false;
-
-    $v_bin = gmp_export($v, 1, GMP_LSW_FIRST);
-    $v_bin = str_pad($v_bin, 32, chr(0), STR_PAD_RIGHT);
-
-    return hash_equals($verifier_bin, $v_bin);
-}
-
-// Tiempo jugado
-function formatPlaytime($seconds)
-{
-    $minutes = floor($seconds / 60);
-    $hours   = floor($minutes / 60);
-    $days    = floor($hours / 24);
-    $years   = floor($days / 365);
-
-    $minutes = $minutes % 60;
-    $hours   = $hours % 24;
-    $days    = $days % 365;
-
-    $result = "";
-    if ($years > 0) $result .= $years . " año" . ($years > 1 ? "s" : "") . ", ";
-    if ($days > 0)  $result .= $days . " día" . ($days > 1 ? "s" : "") . ", ";
-
-    return $result . $hours . "h " . $minutes . "m";
-}
-
-// Iconos
-$raceIconPath  = "icons/races/";
-$classIconPath = "icons/class/";
-
-$raceIcons = [
-    1=>"human",2=>"orc",3=>"dwarf",4=>"nightelf",5=>"undead",
-    6=>"tauren",7=>"gnome",8=>"troll",10=>"bloodelf",11=>"draenei"
-];
-
-$classIcons = [
-    1=>"warrior.png",2=>"paladin.png",3=>"hunter.png",4=>"rogue.png",
-    5=>"priest.png",6=>"deathknight.png",7=>"shaman.png",
-    8=>"mage.png",9=>"warlock.png",11=>"druid.png"
-];
-
-$message = "";
-
-// LOGIN (solo si no está logeado)
 if (!$account && isset($_POST['username'], $_POST['password'])) {
+    $loginResult = loginAccount($_POST['username'], $_POST['password'], $db, $config);
 
-    $user = $_POST['username'];
-    $pass = $_POST['password'];
-
-    $stmt = $db->prepare("
-        SELECT id, salt, verifier, last_ip, email, joindate
-        FROM account
-        WHERE username = UPPER(?)
-    ");
-    $stmt->execute([$user]);
-    $row = $stmt->fetch();
-
-    if (!$row) {
-        $message = "Usuario incorrecto";
+    if ($loginResult['success']) {
+        header("Location: ?lang=" . $currentLangCode);
+        exit;
     } else {
-        if (verifySRP6v2($user, $pass, $row['salt'], $row['verifier'])) {
-
-            $_SESSION['account'] = [
-                'id'       => $row['id'],
-                'username' => $user,
-                'email'    => $row['email'],
-                'last_ip'  => $row['last_ip'],
-                'joindate' => $row['joindate']
-            ];
-
-            // Cargar personajes
-            $charsDb = new PDO(
-                "mysql:host={$config['characters']['host']};dbname={$config['characters']['dbname']}",
-                $config['characters']['user'],
-                $config['characters']['pass'],
-                $config['pdo_options']
-            );
-
-            $stmt = $charsDb->prepare("
-                SELECT guid, name, race, class, gender, level, online, map, zone, totaltime, logout_time
-                FROM characters
-                WHERE account = ?
-            ");
-            $stmt->execute([$row['id']]);
-            $_SESSION['characters'] = $stmt->fetchAll();
-
-            header("Location: ?lang=" . ($_SESSION['lang'] ?? 'es'));
-            exit;
-
-        } else {
-            $message = "Contraseña incorrecta";
-        }
+        $message = $loginResult['message'];
     }
 }
 
-// Buscador de cuentas por email (NO toca login)
-$searchResults = [];
-if ($account && isset($_POST['search_email'])) {
+/* ============================
+   BUSCAR CUENTAS POR EMAIL
+   ============================ */
 
-    $stmt = $db->prepare("
-        SELECT id, username, email, joindate, last_ip
-        FROM account
-        WHERE email = ?
-    ");
-    $stmt->execute([$_POST['search_email']]);
-    $searchResults = $stmt->fetchAll();
+$searchResults = [];
+
+if ($account && isset($_POST['search_email'])) {
+    $searchResults = searchByEmail($_POST['search_email'], $db);
 }
+
 ?>
 <!DOCTYPE html>
 <html>
@@ -160,166 +73,166 @@ if ($account && isset($_POST['search_email'])) {
 <meta charset="utf-8">
 <title>Liberador TrinityCore</title>
 
-<style>
-body { background:#f5f5f5; color:#222; font-family:Arial; }
-@media (prefers-color-scheme: dark) {
-    body { background:#121212; color:#e0e0e0; }
-    input,button { background:#1e1e1e; color:#fff; border:1px solid #444; }
-}
-
-/* Datos privados */
-.private { filter:blur(6px); transition:0.2s; cursor:pointer; }
-.private:hover { filter:blur(0); }
-
-/* Fondo del personaje conectado */
-.online {
-    background:#c8f7c5 !important;
-    border:1px solid #7bd67b !important;
-    border-radius:6px;
-}
-
-/* Texto del personaje conectado */
-.online-block,
-.online-block * {
-    color:#003300 !important;
-    font-weight:bold;
-    text-shadow:none !important;
-}
-</style>
+<link rel="stylesheet" href="assets/css/liberador.css?v=8">
+<script src="assets/js/liberador.js?v=8"></script>
 
 </head>
 <body>
 
-<div style="text-align:right; margin-bottom:10px;">
-    <form method="GET" style="display:inline;">
-        <label for="langSelect">🌐</label>
-        <select name="lang" id="langSelect" onchange="this.form.submit()"
-                style="padding:4px; font-size:14px;">
-            <?php foreach ($langs as $code => $data): ?>
-                <option value="<?php echo $code; ?>"
-                    <?php echo ($_SESSION['lang'] ?? 'es') === $code ? 'selected' : ''; ?>>
-                    <?php echo $data['name']; ?>
-                </option>
-            <?php endforeach; ?>
-        </select>
-    </form>
-    <img src="<?php echo $langs[$_SESSION['lang'] ?? 'es']['flag']; ?>" 
-         alt="flag" width="24" height="24" 
-         style="vertical-align:middle; margin-left:6px;">
-</div>
+<!-- FIX: aplicar tema antes del render -->
+<script>
+(function() {
+    const theme = localStorage.getItem("theme") || "dark";
+    if (theme === "light") {
+        document.documentElement.classList.add("light");
+        document.body.classList.add("light");
+    }
+})();
+</script>
 
-<p><?php echo $message; ?></p>
+<div class="layout">
 
-<?php if (!$account): ?>
+    <!-- ============================
+         PANEL IZQUIERDO
+         ============================ -->
+    <div class="left-panel">
 
-<form method="POST">
-    <label><?php echo $lang['user']; ?>:
-        <input type="text" name="username">
-    </label><br>
+        <!-- HEADER UNIVERSAL -->
+        <div class="global-header">
 
-    <label><?php echo $lang['pass']; ?>:
-        <input type="password" name="password">
-    </label><br>
+            <!-- Título solo si hay cuenta -->
+            <?php if ($account): ?>
+                <h2 class="account-title"><?php echo $lang['account_data']; ?></h2>
+            <?php else: ?>
+                <h2 class="account-title"></h2>
+            <?php endif; ?>
 
-    <button type="submit"><?php echo $lang['login']; ?></button>
-</form>
+            <div class="header-controls">
 
-<?php else: ?>
+                <!-- Botón tema -->
+                <button class="theme-toggle" onclick="toggleTheme()">🌓</button>
 
-<h2><?php echo $lang['account_data']; ?></h2>
+                <!-- Selector de idioma -->
+                <div class="lang-selector header-lang">
+                    <div class="lang-current" onclick="toggleLangMenu()">
+                        <img src="<?php echo $langs[$currentLangCode]['flag']; ?>" class="lang-flag">
+                        <?php echo $langs[$currentLangCode]['name']; ?>
+                        <span class="lang-arrow">▼</span>
+                    </div>
 
-<?php echo $lang['user']; ?>:
-<span class="private"><?php echo htmlspecialchars($account['username']); ?></span><br>
+                    <div id="lang-menu" class="lang-menu">
+                        <?php foreach ($langs as $code => $l): ?>
+                            <a href="?lang=<?php echo $code; ?>">
+                                <img src="<?php echo $l['flag']; ?>" class="lang-flag">
+                                <?php echo $l['name']; ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
 
-<?php echo $lang['email']; ?>:
-<span class="private" onclick="document.getElementById('emailSearchBox').style.display='block';">
-    <?php echo htmlspecialchars($account['email']); ?>
-</span><br>
+            </div>
+        </div>
 
-<div id="emailSearchBox" style="display:none; margin-top:10px; padding:10px; border:1px solid #666;">
-    <h3><?php echo $lang['search_email']; ?></h3>
-    <form method="POST">
-        <input type="hidden" name="search_email" value="<?php echo htmlspecialchars($account['email']); ?>">
-        <button type="submit"><?php echo $lang['search']; ?></button>
-    </form>
-</div>
+        <?php if (!$account): ?>
 
-<?php echo $lang['last_ip']; ?>:
-<span class="private"><?php echo $account['last_ip']; ?></span><br>
+            <?php include __DIR__ . "/includes/login_form.php"; ?>
 
-<?php echo $lang['register_date']; ?>:
-<span class="private"><?php echo $account['joindate']; ?></span><br>
-
-<form method="POST" style="margin-top:10px;">
-    <input type="hidden" name="logout" value="1">
-    <button type="submit"><?php echo $lang['logout']; ?></button>
-</form>
-
-<?php if ($searchResults): ?>
-<h3><?php echo $lang['other_accounts']; ?></h3>
-<ul>
-<?php foreach ($searchResults as $acc): ?>
-    <li>
-        <strong>ID:</strong> <?php echo $acc['id']; ?> —
-        <strong>User:</strong> <?php echo $acc['username']; ?> —
-        <strong>Email:</strong> <?php echo $acc['email']; ?> —
-        <strong><?php echo $lang['register_date']; ?>:</strong> <?php echo $acc['joindate']; ?> —
-        <strong><?php echo $lang['last_ip']; ?>:</strong> <?php echo $acc['last_ip']; ?>
-    </li>
-<?php endforeach; ?>
-</ul>
-<hr>
-<?php endif; ?>
-
-<h2><?php echo $lang['characters']; ?></h2>
-<ul>
-<?php foreach ($characters as $c): ?>
-
-<?php
-$raceIcon = $raceIconPath . "races_" . $raceIcons[$c['race']] . "_" . ($c['gender'] ? "female" : "male") . ".png";
-$classIcon = $classIconPath . $classIcons[$c['class']];
-$mapName = $mapNames[$c['map']] ?? "Mapa desconocido ({$c['map']})";
-$zoneName = $zoneNames[$c['zone']] ?? "Zona desconocida ({$c['zone']})";
-$playtime = formatPlaytime($c['totaltime']);
-$logout = $c['logout_time'] ? date("Y-m-d H:i", $c['logout_time']) : "Nunca";
-?>
-
-<li class="<?php echo $c['online'] ? 'online' : ''; ?>" 
-    style="margin-bottom:12px; padding:10px; display:flex; gap:12px; align-items:flex-start;">
-
-    <div style="width:90px; display:flex; flex-direction:column; gap:4px;">
-        <img src="<?php echo $raceIcon; ?>" width="40">
-        <img src="<?php echo $classIcon; ?>" width="40">
-    </div>
-
-    <div class="<?php echo ($c['online'] ? 'online-block' : ''); ?>" style="line-height:18px;">
-
-        <strong><?php echo $c['name']; ?></strong>
-        (Nivel <?php echo $c['level']; ?>) —
-
-        <?php if ($c['online']): ?>
-            <strong><?php echo $lang['online']; ?></strong>
         <?php else: ?>
-            <span style="color:gray;"><?php echo $lang['offline']; ?></span>
-            <form method="POST" action="unstuck.php" style="display:inline;">
-                <input type="hidden" name="guid" value="<?php echo $c['guid']; ?>">
-                <button type="submit"><?php echo $lang['unstuck']; ?></button>
-            </form>
+
+            <?php include __DIR__ . "/includes/account_info.php"; ?>
+
+            <h2><?php echo $lang['characters']; ?></h2>
+
+            <ul class="character-list">
+            <?php foreach ($characters as $c): ?>
+
+                <?php
+                $raceIcon  = "assets/icons/races/races_" . raceIcon($c['race'], $c['gender']) . ".png";
+                $classIcon = "assets/icons/classes/" . classIcon($c['class']);
+                ?>
+
+                <li class="character-item <?php echo $c['online'] ? 'online' : ''; ?>"
+                    data-guid="<?php echo $c['guid']; ?>"
+                    onclick="loadCharacterRender(<?php echo $c['guid']; ?>)">
+
+                    <div class="char-icons">
+                        <img src="<?php echo $raceIcon; ?>" width="40" height="40" alt="">
+                        <img src="<?php echo $classIcon; ?>" width="40" height="40" alt="">
+                    </div>
+
+                    <div class="char-info <?php echo $c['online'] ? 'online-block' : ''; ?>">
+                        <strong><?php echo htmlspecialchars($c['name']); ?></strong>
+                        (Nivel <?php echo (int)$c['level']; ?>)
+                        <br>
+                        <?php echo $lang['map']; ?>:
+                        <?php echo mapName((int)$c['map'], $mapNames); ?><br>
+                        <?php echo $lang['zone']; ?>:
+                        <?php echo zoneName((int)$c['zone'], $zoneNames); ?><br>
+                        <?php echo $lang['played']; ?>:
+                        <?php echo formatPlaytime((int)$c['totaltime']); ?><br>
+
+                        <?php if (!$c['online']): ?>
+                            <form method="POST" action="unstuck.php" style="display:inline;">
+                                <input type="hidden" name="guid" value="<?php echo (int)$c['guid']; ?>">
+                                <button type="submit"><?php echo $lang['unstuck']; ?></button>
+                            </form>
+                        <?php else: ?>
+                            <strong><?php echo $lang['online']; ?></strong>
+                        <?php endif; ?>
+                    </div>
+
+                </li>
+
+            <?php endforeach; ?>
+            </ul>
+
         <?php endif; ?>
 
-        <br>
-        <?php echo $lang['map']; ?>: <?php echo $mapName; ?><br>
-        <?php echo $lang['zone']; ?>: <?php echo $zoneName; ?><br>
-        <?php echo $lang['played']; ?>: <?php echo $playtime; ?><br>
-        <?php echo $lang['last_logout']; ?>: <?php echo $logout; ?>
     </div>
 
-</li>
+    <!-- ============================
+         PANEL DERECHO (RENDER + BÚSQUEDA)
+         ============================ -->
+    <div id="render-panel" class="right-panel"
+         style="display:<?php echo (!empty($searchResults) || isset($_POST['search_email'])) ? 'block' : 'none'; ?>;">
 
-<?php endforeach; ?>
-</ul>
+        <div id="render-output" class="render-box">
 
-<?php endif; ?>
+            <?php if (!empty($searchResults)): ?>
+
+                <h3><?php echo $lang['results']; ?></h3>
+
+                <ul class="search-results">
+                    <?php foreach ($searchResults as $r): ?>
+                        <li class="search-item">
+
+                            <div class="search-line1">
+                                <span class="private">
+                                    <strong><?php echo htmlspecialchars($r['username']); ?></strong>
+                                    (<?php echo htmlspecialchars($r['email']); ?>)
+                                </span>
+                            </div>
+
+                            <div class="search-line2">
+                                <?php echo htmlspecialchars($r['joindate']); ?>
+                                —
+                                <span class="private"><?php echo htmlspecialchars($r['last_ip']); ?></span>
+                            </div>
+
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+
+            <?php elseif (isset($_POST['search_email'])): ?>
+
+                <p><?php echo $lang['no_results']; ?></p>
+
+            <?php endif; ?>
+
+        </div>
+    </div>
+
+</div>
 
 </body>
 </html>

@@ -1,5 +1,5 @@
 <?php
-return [
+$zoneNames = [
 
     // Raids
     4812 => "Icecrown Citadel",

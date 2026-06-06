@@ -1,5 +1,6 @@
 <?php
-return [
+
+$mapNames = [
     0=>"Azeroth",1=>"Kalimdor",13=>"Testing",25=>"Scott Test",29=>"CashTest",
     30=>"Alterac Valley",33=>"Shadowfang Keep",34=>"Stormwind Stockade",
     35=>"<unused>StormwindPrison",36=>"Deadmines",37=>"Azshara Crater",
