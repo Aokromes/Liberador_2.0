@@ -75,6 +75,7 @@ if ($account && isset($_POST['search_email'])) {
 
 <link rel="stylesheet" href="assets/css/liberador.css?v=8">
 <script src="assets/js/liberador.js?v=8"></script>
+<script src="assets/js/map_zoom.js?v=1"></script>
 
 </head>
 <body>

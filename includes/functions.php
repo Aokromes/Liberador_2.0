@@ -48,14 +48,32 @@ function loginAccount(string $username, string $password, PDO $db, array $config
 
     $charsDb = connectCharactersDB($config);
 
-    $stmt = $charsDb->prepare("
-        SELECT guid, name, race, class, gender, level, online,
-               map, zone, totaltime, logout_time
-        FROM characters
-        WHERE account = ?
-    ");
-    $stmt->execute([$row['id']]);
-    $_SESSION['characters'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$stmt = $charsDb->prepare("
+    SELECT 
+        c.guid,
+        c.name,
+        c.race,
+        c.class,
+        c.gender,
+        c.level,
+        c.online,
+        c.map,
+        c.zone,
+        c.totaltime,
+        c.logout_time,
+        c.money,
+        c.position_x,
+        c.position_y,
+        c.position_z,
+        c.orientation,
+        g.name AS guild_name
+    FROM characters c
+    LEFT JOIN guild_member gm ON gm.guid = c.guid
+    LEFT JOIN guild g ON g.guildid = gm.guildid
+    WHERE c.account = ?
+");
+$stmt->execute([$row['id']]);
+$_SESSION['characters'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     return ['success' => true];
 }
@@ -151,35 +169,3 @@ function formatPlaytime(int $seconds)
 
     return $result . "{$hours}h {$minutes}m";
 }
-
-function getCharacters($accountId)
-{
-    global $DB;
-
-    $stmt = $DB->prepare("
-        SELECT 
-            c.guid,
-            c.name,
-            c.race,
-            c.class,
-            c.gender,
-            c.level,
-            c.online,
-            c.map,
-            c.zone,
-            c.position_x,
-            c.position_y,
-            c.position_z,
-            g.name AS guild_name
-        FROM characters c
-        LEFT JOIN guild g ON g.guildid = c.guildid
-        WHERE c.account = ?
-        ORDER BY c.name ASC
-    ");
-
-    $stmt->execute([$accountId]);
-    $characters = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-    return $characters;
-}
-

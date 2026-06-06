@@ -5,7 +5,7 @@
 body {
     margin: 0;
     font-family: Arial, sans-serif;
-    background-image: url("/tools/liberador/assets/img/logo.png");
+    background-image: url("/assets/img/logo.png");
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -14,7 +14,7 @@ body {
 }
 
 body.light {
-    background-image: url("/tools/liberador/assets/img/logo.png");
+    background-image: url("/assets/img/logo.png");
     color: #111;
 }
 

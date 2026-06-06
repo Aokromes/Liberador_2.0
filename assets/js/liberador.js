@@ -65,8 +65,14 @@ document.addEventListener("click", function (e) {
 
 function applyTheme() {
     const theme = localStorage.getItem("theme") || "dark";
+
+    // documentElement siempre existe
     document.documentElement.classList.toggle("light", theme === "light");
-    document.body.classList.toggle("light", theme === "light");
+
+    // body puede ser null si el script está en <head>
+    if (document.body) {
+        document.body.classList.toggle("light", theme === "light");
+    }
 }
 
 function toggleTheme() {
@@ -76,5 +82,6 @@ function toggleTheme() {
     applyTheme();
 }
 
-applyTheme();
+// Esperar a que el DOM esté listo
+document.addEventListener("DOMContentLoaded", applyTheme);
 
