@@ -55,6 +55,9 @@ $langs = [
         'gender' => 'Género',
         'yes' => 'Sí',
         'no' => 'No',
+        'money' => 'Dinero',
+        'map' => 'Mapa',
+        'zone'  => 'Zona',
 
         /* ============================
            RAZAS (WotLK)
@@ -138,7 +141,9 @@ $langs = [
         'gender' => 'Gender',
         'yes' => 'Yes',
         'no' => 'No',
-
+        'money' => 'Money',
+        'map' => 'Map',
+        'zone'  => 'Zone',
 
         /* ============================
            RACES (WotLK)

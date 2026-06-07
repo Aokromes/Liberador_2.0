@@ -160,9 +160,9 @@ $py_norm = max(0, min(1, $py_norm));
     <p><strong><?php echo $lang['race']; ?>:</strong> <?php echo $raceText; ?></p>
     <p><strong><?php echo $lang['class']; ?>:</strong> <?php echo $classText; ?></p>
     <p><strong><?php echo $lang['gender']; ?>:</strong> <?php echo $genderText; ?></p>
-    <p><strong>Dinero:</strong> <?php echo "{$gold}g {$silver}s {$copper}c"; ?></p>
-    <p><strong>Mapa:</strong> <?php echo htmlspecialchars($mapName); ?></p>
-    <p><strong>Zona:</strong> <?php echo htmlspecialchars($zoneName); ?></p>
+    <p><strong><?php echo $lang['money']; ?>:</strong> <?php echo "{$gold}g {$silver}s {$copper}c"; ?></p>
+    <p><strong><?php echo $lang['map']; ?>:</strong> <?php echo htmlspecialchars($mapName); ?></p>
+    <p><strong><?php echo $lang['zone']; ?>:</strong> <?php echo htmlspecialchars($zoneName); ?></p>
     <p><strong>Coordenadas:</strong>
         X: <?php echo $posX; ?>,
         Y: <?php echo $posY; ?>,
