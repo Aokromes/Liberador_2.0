@@ -4,14 +4,15 @@ session_start();
 require_once __DIR__ . "/config.php";
 require_once __DIR__ . "/includes/functions.php";
 require_once __DIR__ . "/langs.php";
-require_once __DIR__ . "/maps.php";
+require_once __DIR__ . "/maps.php";                 // $mapNames
 require_once __DIR__ . "/zones.php";
-require_once __DIR__ . "/assets/inc/map_data.php";
+require_once __DIR__ . "/assets/inc/map_images.php"; // $map_data (imágenes)
+require_once __DIR__ . "/assets/inc/map_data.php";   // get_player_position()
 
 /* ============================
    CARGAR IDIOMA
    ============================ */
-$lang = $langs[$_SESSION['lang']];
+$lang = $langs[$_SESSION['lang']] ?? $langs['es'];
 
 /* ============================
    VALIDAR SESIÓN
@@ -92,17 +93,55 @@ $silver = floor(($money % 10000) / 100);
 $copper = $money % 100;
 
 /* ============================
-   MAPA INTERACTIVO
+   POSICIÓN Y MAPA
    ============================ */
 $posX = $char['position_x'];
 $posY = $char['position_y'];
 
-$px = 0;
-$py = 0;
+// Posición exacta según MiniManager (en píxeles del mapa original)
+$pos = get_player_position($posX, $posY, $mapId);
+$px  = $pos['x'];
+$py  = $pos['y'];
 
-if (isset($map_data[$mapId])) {
-    list($px, $py) = worldToMap($mapId, $posX, $posY, $map_data, 1024, 768);
+// Imagen base según mapId
+$baseImage = $map_data[$mapId]['image'] ?? "azeroth.jpg";
+
+// Ajuste especial para Silvermoon / Draenei (map 530 pero en EK/Kalimdor)
+if ($mapId == 530) {
+    $x = $posX;
+    $y = $posY;
+
+    // Blood Elf zones (Eversong / Ghostlands / Silvermoon) → Azeroth
+    if ($y < -1000 && $y > -10000 && $x > 5000) {
+        $baseImage = "azeroth.jpg";
+    }
+    // Draenei zones (Azuremyst / Bloodmyst) → Kalimdor
+    else if ($y < -7000 && $x < 0) {
+        $baseImage = "azeroth.jpg";
+    }
 }
+
+$mapImage = "/tools/liberador/assets/img/" . $baseImage;
+
+/* ============================
+   TAMAÑOS REALES DE LOS MAPAS
+   ============================ */
+$mapSizes = [
+    "azeroth.jpg"   => [1002, 668],
+    "azeroth.jpg"  => [1002, 668],
+    "outland.jpg"   => [1002, 668],
+    "northrend.jpg" => [966, 732],
+];
+
+list($mw, $mh) = $mapSizes[$baseImage] ?? [1002, 668];
+
+// Normalizar coordenadas (0–1) para el JS
+$px_norm = $mw > 0 ? $px / $mw : 0;
+$py_norm = $mh > 0 ? $py / $mh : 0;
+
+// Clamp por seguridad
+$px_norm = max(0, min(1, $px_norm));
+$py_norm = max(0, min(1, $py_norm));
 ?>
 
 <div class="char-render">
@@ -113,9 +152,9 @@ if (isset($map_data[$mapId])) {
     </h2>
 
     <div style="display:flex; gap:15px; align-items:center; margin-bottom:10px;">
-        <img src="<?php echo $raceIconPath; ?>" width="64">
-        <img src="<?php echo $classIconPath; ?>" width="64">
-        <img src="<?php echo $factionIcon; ?>" width="64">
+        <img src="<?php echo $raceIconPath; ?>" width="64" alt="Race">
+        <img src="<?php echo $classIconPath; ?>" width="64" alt="Class">
+        <img src="<?php echo $factionIcon; ?>" width="64" alt="Faction">
     </div>
 
     <p><strong><?php echo $lang['race']; ?>:</strong> <?php echo $raceText; ?></p>
@@ -134,40 +173,52 @@ if (isset($map_data[$mapId])) {
 
 </div>
 
-<?php if (isset($map_data[$mapId])): ?>
+<?php if (!empty($baseImage)): ?>
 
-<div id="mapWrapper" style="width:1024px; height:768px; position:relative; overflow:hidden;">
+<div id="mapWrapper" style="
+    width: 100%;
+    max-width: 1024px;
+    aspect-ratio: 4 / 3;
+    position: relative;
+    overflow: hidden;
+">
 
-    <div id="mapInner"
-         data-px="<?php echo $px / 1024; ?>"
-         data-py="<?php echo $py / 768; ?>"
-         style="
-            width:100%;
-            height:100%;
-            background-image:url('/tools/liberador/assets/img/<?php echo $map_data[$mapId]['image']; ?>');
-            background-size:contain;
-            background-repeat:no-repeat;
-            background-position:0 0;
-            cursor:grab;
-            position:relative;
-         ">
+    <div id="mapInner" style="
+        width: 100%;
+        height: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform-origin: 0 0;
+        cursor: grab;
+    ">
+        <img id="mapImage"
+             src="<?php echo $mapImage; ?>"
+             style="width:100%; height:100%; display:block;"
+             alt="Map">
 
-        <div id="mapMarker" style="
-            position:absolute;
-            width:14px;
-            height:14px;
-            background:red;
-            border-radius:50%;
-            border:2px solid white;
-        "></div>
-
+        <!-- Punto rojo: coordenadas NORMALIZADAS (0–1) para map.js -->
+        <div id="mapMarker"
+             data-px="<?php echo htmlspecialchars($px_norm, ENT_QUOTES, 'UTF-8'); ?>"
+             data-py="<?php echo htmlspecialchars($py_norm, ENT_QUOTES, 'UTF-8'); ?>"
+             style="
+                position:absolute;
+                width:14px;
+                height:14px;
+                background:red;
+                border-radius:50%;
+                border:2px solid white;
+                left:0;
+                top:0;
+             ">
+        </div>
     </div>
 
 </div>
 
 <?php else: ?>
 
-<p>Mapa no soportado por MiniManager.</p>
+<p>Mapa no soportado.</p>
 
 <?php endif; ?>
 

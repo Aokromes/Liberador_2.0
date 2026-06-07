@@ -1,31 +1,26 @@
 /* ============================================================
-   MAPA INTERACTIVO — ZOOM + PAN
-   Compatible con carga dinámica vía innerHTML
+   MAPA INTERACTIVO — ZOOM + PAN + LIMITES + MARCADOR CORRECTO
    ============================================================ */
 
 (function () {
 
-    let initialized = false;
-
     function initMap() {
-        if (initialized) return;
 
         const wrapper = document.getElementById("mapWrapper");
         const inner   = document.getElementById("mapInner");
         const marker  = document.getElementById("mapMarker");
+        const img     = document.getElementById("mapImage");
 
-        if (!wrapper || !inner) {
-            // El mapa aún no existe → reintentar
-            setTimeout(initMap, 100);
+        if (!wrapper || !inner || !marker || !img) {
+            setTimeout(initMap, 80);
             return;
         }
 
-        initialized = true;
-        console.log("Mapa detectado, inicializando zoom…");
+//        console.log("Mapa detectado, inicializando zoom…");
 
         let scale = 1;
-        let posX = 0;
-        let posY = 0;
+        let offsetX = 0;
+        let offsetY = 0;
         let isDragging = false;
         let startX, startY;
 
@@ -33,13 +28,11 @@
            POSICIÓN DEL MARCADOR
            ============================ */
         function updateMarker() {
-            if (!marker) return;
+            const w = img.clientWidth;
+            const h = img.clientHeight;
 
-            const w = inner.clientWidth;
-            const h = inner.clientHeight;
-
-            const px = parseFloat(inner.dataset.px) * w;
-            const py = parseFloat(inner.dataset.py) * h;
+            const px = parseFloat(marker.dataset.px) * w;
+            const py = parseFloat(marker.dataset.py) * h;
 
             marker.style.left = px + "px";
             marker.style.top  = py + "px";
@@ -49,7 +42,38 @@
         updateMarker();
 
         /* ============================
-           ZOOM REAL
+           APLICAR TRANSFORMACIÓN
+           ============================ */
+        function applyTransform() {
+            inner.style.transform =
+                `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+        }
+
+        /* ============================
+           LIMITAR MOVIMIENTO
+           ============================ */
+        function clamp() {
+            const w = img.clientWidth * scale;
+            const h = img.clientHeight * scale;
+
+            const minX = wrapper.clientWidth - w;
+            const minY = wrapper.clientHeight - h;
+
+            if (w <= wrapper.clientWidth) {
+                offsetX = (wrapper.clientWidth - w) / 2;
+            } else {
+                offsetX = Math.min(0, Math.max(minX, offsetX));
+            }
+
+            if (h <= wrapper.clientHeight) {
+                offsetY = (wrapper.clientHeight - h) / 2;
+            } else {
+                offsetY = Math.min(0, Math.max(minY, offsetY));
+            }
+        }
+
+        /* ============================
+           ZOOM
            ============================ */
         wrapper.addEventListener("wheel", function(e) {
             e.preventDefault();
@@ -60,59 +84,57 @@
             scale += (e.deltaY < 0 ? zoomIntensity : -zoomIntensity);
             scale = Math.min(Math.max(0.5, scale), 4);
 
-            inner.style.backgroundSize = (scale * 100) + "%";
-
             const rect = wrapper.getBoundingClientRect();
-            const offsetX = e.clientX - rect.left;
-            const offsetY = e.clientY - rect.top;
+            const cx = e.clientX - rect.left;
+            const cy = e.clientY - rect.top;
 
-            posX -= (offsetX / oldScale - offsetX / scale);
-            posY -= (offsetY / oldScale - offsetY / scale);
+            offsetX = cx - (cx - offsetX) * (scale / oldScale);
+            offsetY = cy - (cy - offsetY) * (scale / oldScale);
 
-            inner.style.backgroundPosition = `${posX}px ${posY}px`;
+            clamp();
+            applyTransform();
         }, { passive: false });
 
         /* ============================
            ARRASTRAR (PAN)
            ============================ */
-        inner.addEventListener("mousedown", function(e) {
+        wrapper.addEventListener("mousedown", function(e) {
             isDragging = true;
-            startX = e.clientX - posX;
-            startY = e.clientY - posY;
-            inner.style.cursor = "grabbing";
+            startX = e.clientX - offsetX;
+            startY = e.clientY - offsetY;
+            wrapper.style.cursor = "grabbing";
         });
 
         window.addEventListener("mouseup", function() {
             isDragging = false;
-            inner.style.cursor = "grab";
+            wrapper.style.cursor = "grab";
         });
 
         window.addEventListener("mousemove", function(e) {
             if (!isDragging) return;
 
-            posX = e.clientX - startX;
-            posY = e.clientY - startY;
+            offsetX = e.clientX - startX;
+            offsetY = e.clientY - startY;
 
-            inner.style.backgroundPosition = `${posX}px ${posY}px`;
+            clamp();
+            applyTransform();
         });
 
-        console.log("Zoom del mapa activado correctamente.");
+        applyTransform();
+//        console.log("Zoom + pan aplicados correctamente.");
     }
 
     /* ============================
        INICIALIZACIÓN SEGURA
        ============================ */
 
-    // 1. Cuando el DOM está listo
     document.addEventListener("DOMContentLoaded", initMap);
 
-    // 2. Cuando se cargue contenido dinámico (AJAX)
     const observer = new MutationObserver(() => initMap());
 
     function startObserver() {
         if (document.body) {
             observer.observe(document.body, { childList: true, subtree: true });
-            console.log("Observer iniciado");
         } else {
             setTimeout(startObserver, 50);
         }
